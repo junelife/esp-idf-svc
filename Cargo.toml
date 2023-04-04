@@ -47,6 +47,7 @@ embedded-svc = { version = "0.27", default-features = false }
 esp-idf-hal = { version = "0.43", default-features = false }
 embassy-time-driver = { version = "0.1", optional = true, features = ["tick-hz-1_000_000"] }
 embassy-futures = "0.1"
+memchr = "2.5.0"
 
 [build-dependencies]
 embuild = "0.31.3"
@@ -59,3 +60,21 @@ serde = { version = "1", default-features = false, features = ["derive"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
 postcard = "1"
 async-io = "2"
+
+[[example]]
+name = "http_request"
+
+[[example]]
+name = "wifi"
+
+[[example]]
+name = "wifi_async"
+
+[[example]]
+name = "json_post_handler"
+
+[[example]]
+name = "ws_guessing_game"
+
+[patch.crates-io]
+embedded-svc = { path = "../embedded-svc" }
