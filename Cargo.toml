@@ -80,6 +80,3 @@ name = "json_post_handler"
 
 [[example]]
 name = "ws_guessing_game"
-
-[patch.crates-io]
-embedded-svc = { path = "../embedded-svc" }
