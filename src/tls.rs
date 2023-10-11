@@ -125,8 +125,8 @@ mod esptls {
         io::EspIOError,
         private::cstr::{cstr_arr_from_str_slice, cstr_from_str_truncating, CStr},
         sys::{
-            self, EspError, ESP_ERR_NO_MEM, ESP_FAIL, ESP_TLS_ERR_SSL_WANT_READ,
-            ESP_TLS_ERR_SSL_WANT_WRITE, EWOULDBLOCK,
+            self, EspError, ESP_ERR_NO_MEM, ESP_FAIL, EWOULDBLOCK, MBEDTLS_ERR_SSL_WANT_READ,
+            MBEDTLS_ERR_SSL_WANT_WRITE,
         },
     };
 
@@ -451,11 +451,11 @@ mod esptls {
 
             match ret {
                 1 => Ok(()),
-                ESP_TLS_ERR_SSL_WANT_READ => Err(EspError::from_infallible::<
-                    { ESP_TLS_ERR_SSL_WANT_READ as i32 },
+                MBEDTLS_ERR_SSL_WANT_READ => Err(EspError::from_infallible::<
+                    { MBEDTLS_ERR_SSL_WANT_READ as i32 },
                 >()),
-                ESP_TLS_ERR_SSL_WANT_WRITE => Err(EspError::from_infallible::<
-                    { ESP_TLS_ERR_SSL_WANT_WRITE as i32 },
+                MBEDTLS_ERR_SSL_WANT_WRITE => Err(EspError::from_infallible::<
+                    { MBEDTLS_ERR_SSL_WANT_WRITE as i32 },
                 >()),
                 0 => Err(EspError::from_infallible::<{ EWOULDBLOCK as i32 }>()),
                 _ => Err(EspError::from_infallible::<ESP_FAIL>()),
@@ -712,11 +712,11 @@ mod esptls {
                         .await?;
                     crate::hal::delay::FreeRtos::delay_ms(0);
                 }
-                ESP_TLS_ERR_SSL_WANT_READ => {
+                MBEDTLS_ERR_SSL_WANT_READ => {
                     core::future::poll_fn(|ctx| self.0.borrow_mut().socket.poll_readable(ctx))
                         .await?
                 }
-                ESP_TLS_ERR_SSL_WANT_WRITE => {
+                MBEDTLS_ERR_SSL_WANT_WRITE => {
                     core::future::poll_fn(|ctx| self.0.borrow_mut().socket.poll_writable(ctx))
                         .await?
                 }
