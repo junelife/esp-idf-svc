@@ -112,6 +112,7 @@ impl WebSocketClosingReason {
 
 #[derive(Debug)]
 pub enum WebSocketEventType<'a> {
+    Connecting,
     Connected,
     Disconnected,
     Close(Option<WebSocketClosingReason>),
@@ -165,6 +166,8 @@ impl<'a> WebSocketEventType<'a> {
                 }
             }
             esp_websocket_event_id_t_WEBSOCKET_EVENT_CLOSED => Ok(Self::Closed),
+            #[cfg(esp_idf_version_major = "5")]
+            esp_websocket_event_id_t_WEBSOCKET_EVENT_BEFORE_CONNECT => Ok(Self::Connecting),
             _ => Err(EspError::from_infallible::<ESP_ERR_INVALID_ARG>().into()),
         }
     }
@@ -232,7 +235,7 @@ impl<'a> TryFrom<&'a EspWebSocketClientConfig<'a>> for (esp_websocket_client_con
             ping_interval_sec: conf.ping_interval_sec.as_secs() as _,
 
             cert_pem: cstrs.as_nptr(conf.cert_pem)?,
-            cert_len: conf.cert_pem.map(|c| c.len()).unwrap_or(0) as _,
+            cert_len: conf.cert_pem.map(|c| c.len() + 1).unwrap_or(0) as _,
             client_cert: cstrs.as_nptr(conf.client_cert)?,
             client_cert_len: conf.client_cert.map(|c| c.len()).unwrap_or(0) as _,
             client_key: cstrs.as_nptr(conf.client_key)?,
@@ -376,6 +379,11 @@ pub struct EspWebSocketClient {
     // `send` method in the `Sender` trait in embedded_svc::ws does not take a timeout itself
     timeout: TickType_t,
     _callback: Box<dyn FnMut(i32, *mut esp_websocket_event_data_t)>,
+    // CStrings that are used in the websocket configuration.
+    // We pass references into esp_websocket_client_init() via esp_websocket_client_config_t
+    // and must hold onto the CStrings they reference until the connection is dropped.
+    #[allow(dead_code)]
+    cstrs: RawCstrs,
 }
 
 impl EspWebSocketClient {
@@ -443,6 +451,7 @@ impl EspWebSocketClient {
             handle,
             timeout: t.0,
             _callback: boxed_raw_callback,
+            cstrs,
         };
 
         esp!(unsafe {
@@ -528,6 +537,10 @@ impl EspWebSocketClient {
                 panic!("Unsupported sending operation");
             }
         })
+    }
+
+    pub fn is_connected(&self) -> bool {
+        unsafe { esp_websocket_client_is_connected(self.handle) }
     }
 }
 
